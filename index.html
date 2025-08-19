@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-    <div style="display: flex; justify-content: center;"> 
+<div style="display: flex; justify-content: center;"> 
 
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            max-width: 700px;
             margin: 50px auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -90,6 +90,15 @@
         .grade-D { background-color: pink; color: black; }
         .grade-F { background-color: red; color: white; }
 
+        .grade-breakdown {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 16px;
+        }
+
         .grading-scale {
             margin-top: 30px;
             padding: 20px;
@@ -111,11 +120,34 @@
             padding: 5px 0;
             border-bottom: 1px solid #eee;
         }
+
+        .final-exam-rules {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+        }
+
+        .final-exam-rules h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+
+        .final-exam-rules ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .final-exam-rules li {
+            margin: 5px 0;
+            color: #856404;
+        }
     </style>
 </head>
 <body>
     <div class="calculator">
-        <h1>Grade Calculator</h1>
+        <h1>Standards-Based Grade Calculator</h1>
         
         <div class="input-group">
             <label for="coreTargets">How many CORE Learning Targets have you mastered? (out of 10)</label>
@@ -129,10 +161,22 @@
             <span class="slider-value" id="otherValue">0</span>
         </div>
 
+        <div class="input-group">
+            <label for="finalExam">Final Exam Score (%)</label>
+            <input type="range" id="finalExam" min="0" max="100" value="0" oninput="calculateGrade()">
+            <span class="slider-value" id="finalValue">75%</span>
+        </div>
+
         <div id="result" class="result">Enter your scores above</div>
+        
+        <div id="gradeBreakdown" class="grade-breakdown" style="display: none;">
+            <strong>Grade Calculation:</strong><br>
+            <span id="initialGradeText"></span><br>
+            <span id="finalExamImpact"></span>
+        </div>
 
         <div class="grading-scale">
-            <h3>Grading Scale:</h3>
+            <h3>Standards-Based Grading Scale:</h3>
             <ul>
                 <li><strong>A:</strong> 10 CORE + 4, 5, or 6 OTHER</li>
                 <li><strong>B:</strong> 10 CORE + 2 or 3 OTHER</li>
@@ -154,73 +198,150 @@
                 <li><strong>F:</strong> 7 or fewer CORE</li>
             </ul>
         </div>
+
+        <div class="final-exam-rules">
+            <h4>Final Exam Impact Rules:</h4>
+            <ul>
+                <li><strong>60% or higher:</strong> Grade can only improve or stay the same
+                    <ul style="margin-top: 5px;">
+                        <li>A on final (90-100%) → A overall (if initial was lower)</li>
+                        <li>B on final (80-89%) → B overall (if initial was lower)</li>
+                        <li>C on final (70-79%) → C overall (if initial was lower)</li>
+                    </ul>
+                </li>
+                <li><strong>50-59%:</strong> Grade drops one letter</li>
+                <li><strong>Below 50%:</strong> Grade drops two letters</li>
+            </ul>
+        </div>
     </div>
 
     <script>
+        function getLetterGrade(percentage) {
+            if (percentage >= 90) return 'A';
+            if (percentage >= 80) return 'B';
+            if (percentage >= 70) return 'C';
+            if (percentage >= 60) return 'D';
+            return 'F';
+        }
+
+        function getGradeValue(letter) {
+            const values = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 };
+            return values[letter];
+        }
+
+        function dropGrade(originalGrade, levels) {
+            const gradeOrder = ['F', 'D', 'C', 'B', 'A'];
+            const currentIndex = gradeOrder.indexOf(originalGrade);
+            const newIndex = Math.max(0, currentIndex - levels);
+            return gradeOrder[newIndex];
+        }
+
+        function calculateStandardsGrade(core, other) {
+            if (core <= 7) {
+                return 'F';
+            } else if (core === 8) {
+                if (other >= 5) {
+                    return 'C';
+                } else if (other >= 1) {
+                    return 'D';
+                } else {
+                    return 'D';
+                }
+            } else if (core === 9) {
+                if (other >= 4) {
+                    return 'C';
+                } else if (other >= 1) {
+                    return 'D';
+                } else {
+                    return 'F';
+                }
+            } else if (core === 10) {
+                if (other >= 4) {
+                    return 'A';
+                } else if (other >= 2) {
+                    return 'B';
+                } else {
+                    return 'C';
+                }
+            } else {
+                return 'F';
+            }
+        }
+
         function calculateGrade() {
             const core = parseInt(document.getElementById('coreTargets').value) || 0;
             const other = parseInt(document.getElementById('otherTargets').value) || 0;
+            const finalExam = parseInt(document.getElementById('finalExam').value) || 0;
             const resultDiv = document.getElementById('result');
+            const breakdownDiv = document.getElementById('gradeBreakdown');
             
             // Update slider value displays
             document.getElementById('coreValue').textContent = core;
             document.getElementById('otherValue').textContent = other;
+            document.getElementById('finalValue').textContent = finalExam + '%';
             
-            let grade = '';
+            // Calculate initial grade based on standards
+            const initialGrade = calculateStandardsGrade(core, other);
+            
+            // Apply final exam rules
+            let finalGrade;
+            const finalExamGrade = getLetterGrade(finalExam);
+            
+            if (finalExam < 50) {
+                // Drop two letter grades
+                finalGrade = dropGrade(initialGrade, 2);
+            } else if (finalExam >= 50 && finalExam < 60) {
+                // Drop one letter grade
+                finalGrade = dropGrade(initialGrade, 1);
+            } else if (finalExam >= 60) {
+                // Final exam won't lower grade, but can raise it
+                if (finalExamGrade === 'A' && getGradeValue(initialGrade) < 4) {
+                    finalGrade = 'A';
+                } else if (finalExamGrade === 'B' && getGradeValue(initialGrade) < 3) {
+                    finalGrade = 'B';
+                } else if (finalExamGrade === 'C' && getGradeValue(initialGrade) < 2) {
+                    finalGrade = 'C';
+                } else {
+                    // Keep original grade if final exam grade isn't higher
+                    finalGrade = initialGrade;
+                }
+            }
+            
             let gradeClass = '';
-            
-            if (core <= 7) {
-                grade = 'F';
-                gradeClass = 'grade-F';
-            } else if (core === 8) {
-                if (other >= 5) {
-                    grade = 'C';
-                    gradeClass = 'grade-C';
-                } else if (other >= 1) {
-                    grade = 'D';
-                    gradeClass = 'grade-D';
-                } else {
-                    grade = 'D';
-                    gradeClass = 'grade-D';
-                }
-            } else if (core === 9) {
-                if (other >= 4) {
-                    grade = 'C';
-                    gradeClass = 'grade-C';
-                } else if (other >= 1) {
-                    grade = 'D';
-                    gradeClass = 'grade-D';
-                } else {
-                    grade = 'F';
-                    gradeClass = 'grade-F';
-                }
-            } else if (core === 10) {
-                if (other >= 4) {
-                    grade = 'A';
-                    gradeClass = 'grade-A';
-                } else if (other >= 2) {
-                    grade = 'B';
-                    gradeClass = 'grade-B';
-                } else {
-                    grade = 'C';
-                    gradeClass = 'grade-C';
-                }
-            } else {
-                grade = 'Invalid';
-                gradeClass = '';
+            switch(finalGrade) {
+                case 'A': gradeClass = 'grade-A'; break;
+                case 'B': gradeClass = 'grade-B'; break;
+                case 'C': gradeClass = 'grade-C'; break;
+                case 'D': gradeClass = 'grade-D'; break;
+                case 'F': gradeClass = 'grade-F'; break;
             }
             
             resultDiv.className = `result ${gradeClass}`;
-            resultDiv.textContent = `Your Grade: ${grade}`;
+            resultDiv.textContent = `Your Final Grade: ${finalGrade}`;
+            
+            // Show breakdown
+            breakdownDiv.style.display = 'block';
+            document.getElementById('initialGradeText').textContent = 
+                `Standards-based grade: ${initialGrade} (${core} CORE + ${other} OTHER)`;
+            
+            // Determine impact text
+            let impactText = `Final exam: ${finalExam}% (${finalExamGrade}) - `;
+            if (finalGrade !== initialGrade) {
+                if (getGradeValue(finalGrade) > getGradeValue(initialGrade)) {
+                    impactText += `Grade improved from ${initialGrade} to ${finalGrade}!`;
+                } else {
+                    impactText += `Grade lowered from ${initialGrade} to ${finalGrade}`;
+                }
+            } else {
+                impactText += `Grade remained ${finalGrade}`;
+            }
+            
+            document.getElementById('finalExamImpact').textContent = impactText;
         }
 
         // Calculate initial grade
         calculateGrade();
     </script>
 </body>
-    </div>
+</div>
 </html>
-
-
-
-
