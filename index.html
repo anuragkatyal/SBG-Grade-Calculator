@@ -1,7 +1,7 @@
 <!DOCTYPE html>
+    <div style="display: flex; justify-content: center;"> 
 
 <html lang="en">
-    <div style="display: flex; justify-content: center;"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,17 +39,40 @@
             color: #555;
         }
 
-        input {
+        input[type="range"] {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
+            height: 8px;
             border-radius: 5px;
-            font-size: 16px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
         }
 
-        input:focus {
-            border-color: #4CAF50;
-            outline: none;
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: blue;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: grey;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            display: inline-block;
+            font-weight: regular;
+            color: black;
+            font-size: 18px;
+            margin-left: 10px;
         }
 
         .result {
@@ -96,12 +119,14 @@
         
         <div class="input-group">
             <label for="coreTargets">How many CORE Learning Targets have you mastered? (out of 10)</label>
-            <input type="number" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
+            <input type="range" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
+            <span class="slider-value" id="coreValue">0</span>
         </div>
 
         <div class="input-group">
-            <label for="otherTargets">How many other Learning Targets have you mastered? (out of 6)</label>
-            <input type="number" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
+            <label for="otherTargets">How many OTHER Learning Targets have you mastered? (out of 6)</label>
+            <input type="range" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
+            <span class="slider-value" id="otherValue">0</span>
         </div>
 
         <div id="result" class="result">Enter your scores above</div>
@@ -109,20 +134,20 @@
         <div class="grading-scale">
             <h3>Grading Scale:</h3>
             <ul>
-                <li><strong>A:</strong> 10 CORE + 4, 5, or 6 other</li>
-                <li><strong>B:</strong> 10 CORE + 2 or 3 other</li>
-                <li><strong>C:</strong> 10 CORE + 1 other, OR
-                    <ul style="margin-left: 20px;">
-                        <li></li>
+                <li><strong>A:</strong> 10 CORE + 4, 5, or 6 OTHER</li>
+                <li><strong>B:</strong> 10 CORE + 2 or 3 OTHER</li>
+                <li><strong>C:</strong> 
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        <li>10 CORE + 1 OTHER, OR</li>
                         <li>10 CORE (no others needed), OR</li>
-                        <li>9 CORE + 4, 5, or 6 other, OR</li>
-                        <li>8 CORE + 5 or 6 other</li>
+                        <li>9 CORE + 4, 5, or 6 OTHER, OR</li>
+                        <li>8 CORE + 5 or 6 OTHER</li>
                     </ul>
                 </li>
                 <li><strong>D:</strong>
-                    <ul style="margin-left: 20px;">
-                        <li>9 CORE + 1, 2, or 3 other, OR</li>
-                        <li>8 CORE + 1, 2, 3, or 4 other, OR</li>
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        <li>9 CORE + 1, 2, or 3 OTHER, OR</li>
+                        <li>8 CORE + 1, 2, 3, or 4 OTHER, OR</li>
                         <li>8 CORE (no others needed)</li>
                     </ul>
                 </li>
@@ -136,6 +161,10 @@
             const core = parseInt(document.getElementById('coreTargets').value) || 0;
             const other = parseInt(document.getElementById('otherTargets').value) || 0;
             const resultDiv = document.getElementById('result');
+            
+            // Update slider value displays
+            document.getElementById('coreValue').textContent = core;
+            document.getElementById('otherValue').textContent = other;
             
             let grade = '';
             let gradeClass = '';
@@ -191,3 +220,7 @@
 </body>
     </div>
 </html>
+
+
+
+
