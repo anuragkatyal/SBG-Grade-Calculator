@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standards-Based Grade Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .calculator {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .grade-A { background-color: #d4edda; color: #155724; }
+        .grade-B { background-color: #cce5ff; color: #004085; }
+        .grade-C { background-color: #fff3cd; color: #856404; }
+        .grade-D { background-color: #f8d7da; color: #721c24; }
+        .grade-F { background-color: #f5c6cb; color: #721c24; }
+
+        .grading-scale {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .grading-scale h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .grading-scale ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .grading-scale li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>Grade Calculator</h1>
+        
+        <div class="input-group">
+            <label for="coreTargets">How many CORE Learning Targets have you mastered? (out of 10)</label>
+            <input type="number" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
+        </div>
+
+        <div class="input-group">
+            <label for="otherTargets">How many OTHER Learning Targets have you mastered? (out of 6)</label>
+            <input type="number" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
+        </div>
+
+        <div id="result" class="result">Enter your scores above</div>
+
+        <div class="grading-scale">
+            <h3>Grading Scale:</h3>
+            <ul>
+                <li><strong>A:</strong> 10 CORE + 4, 5, or 6 OTHER</li>
+                <li><strong>B:</strong> 10 CORE + 2 or 3 OTHER</li>
+                <li><strong>C:</strong> 
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        <li>10 CORE + 1 OTHER, OR</li>
+                        <li>10 CORE (no others needed), OR</li>
+                        <li>9 CORE + 4, 5, or 6 OTHER, OR</li>
+                        <li>8 CORE + 5 or 6 OTHER</li>
+                    </ul>
+                </li>
+                <li><strong>D:</strong>
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        <li>9 CORE + 1, 2, or 3 OTHER, OR</li>
+                        <li>8 CORE + 1, 2, 3, or 4 OTHER, OR</li>
+                        <li>8 CORE (no others needed)</li>
+                    </ul>
+                </li>
+                <li><strong>F:</strong> 7 or fewer CORE</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function calculateGrade() {
+            const core = parseInt(document.getElementById('coreTargets').value) || 0;
+            const other = parseInt(document.getElementById('otherTargets').value) || 0;
+            const resultDiv = document.getElementById('result');
+            
+            let grade = '';
+            let gradeClass = '';
+            
+            if (core <= 7) {
+                grade = 'F';
+                gradeClass = 'grade-F';
+            } else if (core === 8) {
+                if (other >= 5) {
+                    grade = 'C';
+                    gradeClass = 'grade-C';
+                } else if (other >= 1) {
+                    grade = 'D';
+                    gradeClass = 'grade-D';
+                } else {
+                    grade = 'D';
+                    gradeClass = 'grade-D';
+                }
+            } else if (core === 9) {
+                if (other >= 4) {
+                    grade = 'C';
+                    gradeClass = 'grade-C';
+                } else if (other >= 1) {
+                    grade = 'D';
+                    gradeClass = 'grade-D';
+                } else {
+                    grade = 'F';
+                    gradeClass = 'grade-F';
+                }
+            } else if (core === 10) {
+                if (other >= 4) {
+                    grade = 'A';
+                    gradeClass = 'grade-A';
+                } else if (other >= 2) {
+                    grade = 'B';
+                    gradeClass = 'grade-B';
+                } else {
+                    grade = 'C';
+                    gradeClass = 'grade-C';
+                }
+            } else {
+                grade = 'Invalid';
+                gradeClass = '';
+            }
+            
+            resultDiv.className = `result ${gradeClass}`;
+            resultDiv.textContent = `Your Grade: ${grade}`;
+        }
+
+        // Calculate initial grade
+        calculateGrade();
+    </script>
+</body>
+</html>
