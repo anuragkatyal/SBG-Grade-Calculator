@@ -39,6 +39,11 @@
             color: #555;
         }
 
+        .slider-container {
+            position: relative;
+            margin: 20px 0;
+        }
+
         input[type="range"] {
             width: 100%;
             height: 8px;
@@ -46,6 +51,7 @@
             background: #ddd;
             outline: none;
             -webkit-appearance: none;
+            margin: 10px 0;
         }
 
         input[type="range"]::-webkit-slider-thumb {
@@ -65,6 +71,30 @@
             background: grey;
             cursor: pointer;
             border: none;
+        }
+
+        .hashmarks {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .hashmark {
+            position: relative;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+            flex: none;
+        }
+
+        .hashmark::before {
+            content: '|';
+            display: block;
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 2px;
         }
 
         .slider-value {
@@ -151,20 +181,26 @@
         
         <div class="input-group">
             <label for="coreTargets">How many CORE Learning Targets have you mastered? (out of 10)</label>
-            <input type="range" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
-            <span class="slider-value" id="coreValue">0</span>
+            <div class="slider-container">
+                <input type="range" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
+                <div class="hashmarks" id="coreHashmarks"></div>
+            </div>
+            CORE LT =<span class="slider-value" id="coreValue">0</span>
         </div>
 
         <div class="input-group">
             <label for="otherTargets">How many OTHER Learning Targets have you mastered? (out of 6)</label>
-            <input type="range" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
-            <span class="slider-value" id="otherValue">0</span>
+            <div class="slider-container">
+                <input type="range" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
+                <div class="hashmarks" id="otherHashmarks"></div>
+            </div>
+            OTHER LT =<span class="slider-value" id="otherValue">0</span>
         </div>
 
         <div class="input-group">
             <label for="finalExam">Final Exam Score (%)</label>
             <input type="range" id="finalExam" min="0" max="100" value="0" oninput="calculateGrade()">
-            <span class="slider-value" id="finalValue">75%</span>
+            <span class="slider-value" id="finalValue">0</span>
         </div>
 
         <div id="result" class="result">Enter your scores above</div>
@@ -202,20 +238,36 @@
         <div class="final-exam-rules">
             <h4>Final Exam Impact Rules:</h4>
             <ul>
-                <li><strong>60% or higher:</strong> Grade can only improve or stay the same
-                    <ul style="margin-top: 5px;">
-                        <li>A on final (90-100%) → A overall (if initial was lower)</li>
-                        <li>B on final (80-89%) → B overall (if initial was lower)</li>
-                        <li>C on final (70-79%) → C overall (if initial was lower)</li>
-                    </ul>
-                </li>
-                <li><strong>50-59%:</strong> Grade drops one letter</li>
-                <li><strong>Below 50%:</strong> Grade drops two letters</li>
+                <li><strong>85% or higher:</strong> Grade improves by two letter grades</li>
+                <li><strong>70-84%:</strong> Grade improves by one letter grade</li>
+                <li><strong>60-69%:</strong> No change to grade</li>
+                <li><strong>50-59%:</strong> Grade drops by one letter grade</li>
+                <li><strong>Below 50%:</strong> Grade drops by two letter grades</li>
             </ul>
         </div>
     </div>
 
     <script>
+        function createHashmarks() {
+            // Create hashmarks for CORE targets (0-10)
+            const coreHashmarks = document.getElementById('coreHashmarks');
+            for (let i = 0; i <= 10; i++) {
+                const hashmark = document.createElement('div');
+                hashmark.className = 'hashmark';
+                hashmark.textContent = i;
+                coreHashmarks.appendChild(hashmark);
+            }
+
+            // Create hashmarks for OTHER targets (0-6)
+            const otherHashmarks = document.getElementById('otherHashmarks');
+            for (let i = 0; i <= 6; i++) {
+                const hashmark = document.createElement('div');
+                hashmark.className = 'hashmark';
+                hashmark.textContent = i;
+                otherHashmarks.appendChild(hashmark);
+            }
+        }
+
         function getLetterGrade(percentage) {
             if (percentage >= 90) return 'A';
             if (percentage >= 80) return 'B';
@@ -229,10 +281,10 @@
             return values[letter];
         }
 
-        function dropGrade(originalGrade, levels) {
+        function adjustGrade(originalGrade, adjustment) {
             const gradeOrder = ['F', 'D', 'C', 'B', 'A'];
             const currentIndex = gradeOrder.indexOf(originalGrade);
-            const newIndex = Math.max(0, currentIndex - levels);
+            const newIndex = Math.max(0, Math.min(4, currentIndex + adjustment));
             return gradeOrder[newIndex];
         }
 
@@ -283,29 +335,28 @@
             // Calculate initial grade based on standards
             const initialGrade = calculateStandardsGrade(core, other);
             
-            // Apply final exam rules
+            // Apply new final exam rules
             let finalGrade;
-            const finalExamGrade = getLetterGrade(finalExam);
+            let adjustment = 0;
             
-            if (finalExam < 50) {
-                // Drop two letter grades
-                finalGrade = dropGrade(initialGrade, 2);
-            } else if (finalExam >= 50 && finalExam < 60) {
-                // Drop one letter grade
-                finalGrade = dropGrade(initialGrade, 1);
+            if (finalExam >= 85) {
+                // Improve by two letter grades
+                adjustment = 2;
+            } else if (finalExam >= 70) {
+                // Improve by one letter grade
+                adjustment = 1;
             } else if (finalExam >= 60) {
-                // Final exam won't lower grade, but can raise it
-                if (finalExamGrade === 'A' && getGradeValue(initialGrade) < 4) {
-                    finalGrade = 'A';
-                } else if (finalExamGrade === 'B' && getGradeValue(initialGrade) < 3) {
-                    finalGrade = 'B';
-                } else if (finalExamGrade === 'C' && getGradeValue(initialGrade) < 2) {
-                    finalGrade = 'C';
-                } else {
-                    // Keep original grade if final exam grade isn't higher
-                    finalGrade = initialGrade;
-                }
+                // No change
+                adjustment = 0;
+            } else if (finalExam >= 50) {
+                // Drop by one letter grade
+                adjustment = -1;
+            } else if (finalExam < 50) {
+                // Drop by two letter grades
+                adjustment = -2;
             }
+            
+            finalGrade = adjustGrade(initialGrade, adjustment);
             
             let gradeClass = '';
             switch(finalGrade) {
@@ -325,21 +376,22 @@
                 `Standards-based grade: ${initialGrade} (${core} CORE + ${other} OTHER)`;
             
             // Determine impact text
+            const finalExamGrade = getLetterGrade(finalExam);
             let impactText = `Final exam: ${finalExam}% (${finalExamGrade}) - `;
-            if (finalGrade !== initialGrade) {
-                if (getGradeValue(finalGrade) > getGradeValue(initialGrade)) {
-                    impactText += `Grade improved from ${initialGrade} to ${finalGrade}!`;
-                } else {
-                    impactText += `Grade lowered from ${initialGrade} to ${finalGrade}`;
-                }
+            
+            if (adjustment > 0) {
+                impactText += `Grade improved from ${initialGrade} to ${finalGrade}! (+${adjustment} letter grade${adjustment > 1 ? 's' : ''})`;
+            } else if (adjustment < 0) {
+                impactText += `Grade lowered from ${initialGrade} to ${finalGrade} (${adjustment} letter grade${Math.abs(adjustment) > 1 ? 's' : ''})`;
             } else {
-                impactText += `Grade remained ${finalGrade}`;
+                impactText += `Grade remained ${finalGrade} (no change)`;
             }
             
             document.getElementById('finalExamImpact').textContent = impactText;
         }
 
-        // Calculate initial grade
+        // Initialize hashmarks and calculate initial grade
+        createHashmarks();
         calculateGrade();
     </script>
 </body>
