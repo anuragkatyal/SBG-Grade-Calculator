@@ -227,6 +227,7 @@
                 <li><strong>D:</strong>
                     <ul style="margin-left: 20px; margin-top: 5px;">
                         <li>9 CORE + 1, 2, or 3 OTHER, OR</li>
+                        <li>9 CORE (no others needed), OR</li>
                         <li>8 CORE + 1, 2, 3, or 4 OTHER, OR</li>
                         <li>8 CORE (no others needed)</li>
                     </ul>
@@ -238,11 +239,11 @@
         <div class="final-exam-rules">
             <h4>Final Exam Impact Rules:</h4>
             <ul>
-                <li><strong>85% or higher:</strong> Grade improves by two letter grades</li>
-                <li><strong>70-84%:</strong> Grade improves by one letter grade</li>
-                <li><strong>60-69%:</strong> No change to grade</li>
-                <li><strong>50-59%:</strong> Grade drops by one letter grade</li>
-                <li><strong>Below 50%:</strong> Grade drops by two letter grades</li>
+                <li><strong>85% or higher:</strong> Grade improves by up to 2 letter grades</li>
+                <li><strong>70-84.99%:</strong> Grade improves by up to 1 letter grade</li>
+                <li><strong>60-69.99%:</strong> No change to grade</li>
+                <li><strong>50-59.99%:</strong> Grade drops by up to 1 letter grade</li>
+                <li><strong>Below 50%:</strong> Grade drops by up to 2 letter grades</li>
             </ul>
         </div>
     </div>
@@ -268,19 +269,6 @@
             }
         }
 
-        function getLetterGrade(percentage) {
-            if (percentage >= 90) return 'A';
-            if (percentage >= 80) return 'B';
-            if (percentage >= 70) return 'C';
-            if (percentage >= 60) return 'D';
-            return 'F';
-        }
-
-        function getGradeValue(letter) {
-            const values = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 };
-            return values[letter];
-        }
-
         function adjustGrade(originalGrade, adjustment) {
             const gradeOrder = ['F', 'D', 'C', 'B', 'A'];
             const currentIndex = gradeOrder.indexOf(originalGrade);
@@ -289,35 +277,48 @@
         }
 
         function calculateStandardsGrade(core, other) {
+            // F grade: 7 or fewer CORE LTs
             if (core <= 7) {
                 return 'F';
-            } else if (core === 8) {
-                if (other >= 5) {
-                    return 'C';
-                } else if (other >= 1) {
-                    return 'D';
-                } else {
-                    return 'D';
-                }
-            } else if (core === 9) {
-                if (other >= 4) {
-                    return 'C';
-                } else if (other >= 1) {
-                    return 'D';
-                } else {
-                    return 'F';
-                }
-            } else if (core === 10) {
-                if (other >= 4) {
-                    return 'A';
-                } else if (other >= 2) {
-                    return 'B';
-                } else {
-                    return 'C';
-                }
-            } else {
-                return 'F';
             }
+            
+            // 8 CORE LTs
+            if (core === 8) {
+                if (other >= 5) {
+                    return 'C'; // 8 CORE + 5 or 6 OTHER = C
+                } else if (other >= 1) {
+                    return 'D'; // 8 CORE + 1, 2, 3, or 4 OTHER = D
+                } else {
+                    return 'D'; // 8 CORE (no others) = D
+                }
+            }
+            
+            // 9 CORE LTs
+            if (core === 9) {
+                if (other >= 4) {
+                    return 'C'; // 9 CORE + 4, 5, or 6 OTHER = C
+                } else if (other >= 1) {
+                    return 'D'; // 9 CORE + 1, 2, or 3 OTHER = D
+                } else {
+                    return 'D'; // 9 CORE (no others) = D
+                }
+            }
+            
+            // 10 CORE LTs
+            if (core === 10) {
+                if (other >= 4) {
+                    return 'A'; // 10 CORE + 4, 5, or 6 OTHER = A
+                } else if (other >= 2) {
+                    return 'B'; // 10 CORE + 2 or 3 OTHER = B
+                } else if (other >= 1) {
+                    return 'C'; // 10 CORE + 1 OTHER = C
+                } else {
+                    return 'C'; // 10 CORE (no others) = C
+                }
+            }
+            
+            // This shouldn't happen given our constraints, but fallback
+            return 'F';
         }
 
         function calculateGrade() {
@@ -335,24 +336,24 @@
             // Calculate initial grade based on standards
             const initialGrade = calculateStandardsGrade(core, other);
             
-            // Apply new final exam rules
+            // Apply final exam impact rules
             let finalGrade;
             let adjustment = 0;
             
             if (finalExam >= 85) {
-                // Improve by two letter grades
+                // Grade goes up by a maximum of 2 letter grades
                 adjustment = 2;
             } else if (finalExam >= 70) {
-                // Improve by one letter grade
+                // Grade goes up by a maximum of 1 letter grade
                 adjustment = 1;
             } else if (finalExam >= 60) {
                 // No change
                 adjustment = 0;
             } else if (finalExam >= 50) {
-                // Drop by one letter grade
+                // Grade goes down by a maximum of 1 letter grade
                 adjustment = -1;
-            } else if (finalExam < 50) {
-                // Drop by two letter grades
+            } else {
+                // Grade goes down by a maximum of 2 letter grades
                 adjustment = -2;
             }
             
@@ -376,8 +377,7 @@
                 `Standards-based grade: ${initialGrade} (${core} CORE + ${other} OTHER)`;
             
             // Determine impact text
-            const finalExamGrade = getLetterGrade(finalExam);
-            let impactText = `Final exam: ${finalExam}% (${finalExamGrade}) - `;
+            let impactText = `Final exam: ${finalExam}% - `;
             
             if (adjustment > 0) {
                 impactText += `Grade improved from ${initialGrade} to ${finalGrade}! (+${adjustment} letter grade${adjustment > 1 ? 's' : ''})`;
