@@ -1,223 +1,328 @@
 <!DOCTYPE html>
-<div style="display: flex; justify-content: center;"> 
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Standards-Based Grade Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Inter', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
         }
 
         .calculator {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 680px;
         }
 
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
+            color: #1e1b4b;
+            margin: 0 0 6px 0;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin: 0 0 36px 0;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 28px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
         }
 
         .slider-container {
             position: relative;
-            margin: 20px 0;
+            margin: 4px 0;
         }
 
         input[type="range"] {
             width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #ddd;
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
             outline: none;
             -webkit-appearance: none;
-            margin: 10px 0;
+            margin: 12px 0 6px;
+            cursor: pointer;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 15px;
-            height: 15px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: blue;
+            background: #4f46e5;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.45);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.55);
         }
 
         input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: grey;
+            background: #4f46e5;
             cursor: pointer;
             border: none;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.45);
         }
 
         .hashmarks {
             display: flex;
             justify-content: space-between;
-            margin-top: 5px;
-            position: relative;
+            margin-top: 2px;
         }
 
         .hashmark {
             position: relative;
             text-align: center;
-            font-size: 12px;
-            color: #666;
-            font-weight: normal;
+            font-size: 11px;
+            color: #9ca3af;
+            font-weight: 500;
             flex: none;
         }
 
         .hashmark::before {
             content: '|';
             display: block;
-            color: #999;
-            font-size: 14px;
+            color: #d1d5db;
+            font-size: 10px;
             margin-bottom: 2px;
         }
 
+        .slider-readout {
+            display: flex;
+            align-items: baseline;
+            justify-content: flex-end;
+            margin-top: 6px;
+            gap: 4px;
+        }
+
+        .slider-readout-label {
+            font-size: 13px;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
         .slider-value {
-            display: inline-block;
-            font-weight: regular;
-            color: black;
-            font-size: 18px;
-            margin-left: 10px;
+            font-weight: 700;
+            color: #4f46e5;
+            font-size: 20px;
+            min-width: 48px;
+            text-align: right;
         }
 
         .result {
             text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 5px;
-            font-size: 24px;
-            font-weight: bold;
+            margin-top: 8px;
+            padding: 28px 20px;
+            border-radius: 14px;
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: #f3f4f6;
+            color: #9ca3af;
+            transition: background 0.35s ease, color 0.35s ease;
         }
 
-        .grade-A { background-color: #50c878; color: #ffffff; }
-        .grade-B { background-color: orange; color: #004085; }
-        .grade-C { background-color: #c040f0; color: #ffffff; }
-        .grade-D { background-color: pink; color: black; }
-        .grade-F { background-color: red; color: white; }
+        .grade-A { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
+        .grade-B { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
+        .grade-C { background: linear-gradient(135deg, #9333ea, #c026d3); color: #fff; }
+        .grade-D { background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; }
+        .grade-F { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
 
         .grade-breakdown {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            text-align: left;
-            font-size: 16px;
+            margin-top: 14px;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #475569;
+        }
+
+        .grade-breakdown strong {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+            margin: 32px 0;
         }
 
         .grading-scale {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+            padding: 20px 24px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
         }
 
         .grading-scale h3 {
-            margin-top: 0;
-            color: #333;
+            margin: 0 0 16px 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
         }
 
         .grading-scale ul {
             list-style-type: none;
             padding: 0;
+            margin: 0;
         }
 
         .grading-scale li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
+            padding: 9px 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .grading-scale li:last-child {
+            border-bottom: none;
         }
 
         .final-exam-rules {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
+            margin-top: 14px;
+            padding: 20px 24px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 12px;
         }
 
         .final-exam-rules h4 {
-            margin-top: 0;
-            color: #856404;
+            margin: 0 0 14px 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #b45309;
         }
 
         .final-exam-rules ul {
-            margin: 10px 0;
-            padding-left: 20px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
         }
 
         .final-exam-rules li {
-            margin: 5px 0;
-            color: #856404;
+            padding: 7px 0;
+            color: #78350f;
+            font-size: 14px;
+            border-bottom: 1px solid #fde68a;
+            display: flex;
+            gap: 8px;
+        }
+
+        .final-exam-rules li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .final-exam-rules li strong {
+            min-width: 118px;
+            color: #92400e;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="calculator">
         <h1>Standards-Based Grade Calculator</h1>
-        
+        <p class="subtitle">Adjust the sliders below to see your projected final grade</p>
+
         <div class="input-group">
-            <label for="coreTargets">How many CORE Learning Targets have you mastered? (out of 10)</label>
+            <label for="coreTargets">CORE Learning Targets mastered (out of 10)</label>
             <div class="slider-container">
                 <input type="range" id="coreTargets" min="0" max="10" value="0" oninput="calculateGrade()">
                 <div class="hashmarks" id="coreHashmarks"></div>
             </div>
-            CORE LT =<span class="slider-value" id="coreValue">0</span>
+            <div class="slider-readout">
+                <span class="slider-readout-label">CORE LT =&nbsp;</span>
+                <span class="slider-value" id="coreValue">0</span>
+            </div>
         </div>
 
         <div class="input-group">
-            <label for="otherTargets">How many OTHER Learning Targets have you mastered? (out of 6)</label>
+            <label for="otherTargets">OTHER Learning Targets mastered (out of 6)</label>
             <div class="slider-container">
                 <input type="range" id="otherTargets" min="0" max="6" value="0" oninput="calculateGrade()">
                 <div class="hashmarks" id="otherHashmarks"></div>
             </div>
-            OTHER LT =<span class="slider-value" id="otherValue">0</span>
+            <div class="slider-readout">
+                <span class="slider-readout-label">OTHER LT =&nbsp;</span>
+                <span class="slider-value" id="otherValue">0</span>
+            </div>
         </div>
 
         <div class="input-group">
-            <label for="finalExam">Final Exam Score (%)</label>
+            <label for="finalExam">Final Exam Score</label>
             <input type="range" id="finalExam" min="0" max="100" value="0" oninput="calculateGrade()">
-            <span class="slider-value" id="finalValue">0</span>
+            <div class="slider-readout">
+                <span class="slider-readout-label">Score =&nbsp;</span>
+                <span class="slider-value" id="finalValue">0%</span>
+            </div>
         </div>
 
         <div id="result" class="result">Enter your scores above</div>
-        
+
         <div id="gradeBreakdown" class="grade-breakdown" style="display: none;">
-            <strong>Grade Calculation:</strong><br>
+            <strong>Grade Calculation</strong>
             <span id="initialGradeText"></span><br>
             <span id="finalExamImpact"></span>
         </div>
 
+        <div class="section-divider"></div>
+
         <div class="grading-scale">
-            <h3>Standards-Based Grading Scale:</h3>
+            <h3>Standards-Based Grading Scale</h3>
             <ul>
                 <li><strong>A:</strong> 10 CORE + 4, 5, or 6 OTHER</li>
                 <li><strong>B:</strong> 10 CORE + 2 or 3 OTHER</li>
-                <li><strong>C:</strong> 
-                    <ul style="margin-left: 20px; margin-top: 5px;">
+                <li><strong>C:</strong>
+                    <ul style="margin: 6px 0 2px 16px; list-style: disc; font-size: 13px; color: #6b7280;">
                         <li>10 CORE + 1 OTHER, OR</li>
                         <li>10 CORE (no others needed), OR</li>
                         <li>9 CORE + 4, 5, or 6 OTHER, OR</li>
@@ -225,7 +330,7 @@
                     </ul>
                 </li>
                 <li><strong>D:</strong>
-                    <ul style="margin-left: 20px; margin-top: 5px;">
+                    <ul style="margin: 6px 0 2px 16px; list-style: disc; font-size: 13px; color: #6b7280;">
                         <li>9 CORE + 1, 2, or 3 OTHER, OR</li>
                         <li>9 CORE (no others needed), OR</li>
                         <li>8 CORE + 1, 2, 3, or 4 OTHER, OR</li>
@@ -237,7 +342,7 @@
         </div>
 
         <div class="final-exam-rules">
-            <h4>Final Exam Impact Rules:</h4>
+            <h4>Final Exam Impact Rules</h4>
             <ul>
                 <li><strong>90% or higher:</strong> Grade improves by up to 3 letter grades</li>
                 <li><strong>80–89.99%:</strong> Grade improves by up to 2 letter grades</li>
@@ -403,5 +508,4 @@
         calculateGrade();
     </script>
 </body>
-</div>
 </html>
