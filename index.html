@@ -41,7 +41,7 @@
 
         .subtitle {
             text-align: center;
-            color: #9ca3af;
+            color: #6b6b6b;
             font-size: 14px;
             margin: 0 0 36px 0;
         }
@@ -101,6 +101,12 @@
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.45);
         }
 
+        input[type="range"]:focus-visible {
+            outline: 3px solid #4f46e5;
+            outline-offset: 4px;
+            border-radius: 3px;
+        }
+
         .hashmarks {
             display: flex;
             justify-content: space-between;
@@ -111,7 +117,7 @@
             position: relative;
             text-align: center;
             font-size: 11px;
-            color: #9ca3af;
+            color: #6b6b6b;
             font-weight: 500;
             flex: none;
         }
@@ -119,7 +125,7 @@
         .hashmark::before {
             content: '|';
             display: block;
-            color: #d1d5db;
+            color: #6b6b6b;
             font-size: 10px;
             margin-bottom: 2px;
         }
@@ -134,7 +140,7 @@
 
         .slider-readout-label {
             font-size: 13px;
-            color: #9ca3af;
+            color: #6b6b6b;
             font-weight: 500;
         }
 
@@ -155,14 +161,14 @@
             font-weight: 700;
             letter-spacing: -0.5px;
             background: #f3f4f6;
-            color: #9ca3af;
+            color: #4b5563;
             transition: background 0.35s ease, color 0.35s ease;
         }
 
-        .grade-A { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
+        .grade-A { background: linear-gradient(135deg, #047857, #059669); color: #fff; }
         .grade-B { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
         .grade-C { background: linear-gradient(135deg, #9333ea, #c026d3); color: #fff; }
-        .grade-D { background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; }
+        .grade-D { background: linear-gradient(135deg, #c2410c, #ea580c); color: #fff; }
         .grade-F { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
 
         .grade-breakdown {
@@ -178,7 +184,7 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #9ca3af;
+            color: #6b6b6b;
             margin-bottom: 6px;
         }
 
@@ -198,7 +204,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #9ca3af;
+            color: #6b6b6b;
         }
 
         .grading-scale ul {
@@ -229,7 +235,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #9ca3af;
+            color: #6b6b6b;
         }
 
         .final-exam-rules ul {
@@ -297,7 +303,7 @@
             </div>
         </div>
 
-        <div id="result" class="result">Enter your scores above</div>
+        <div id="result" class="result" aria-live="polite" aria-atomic="true">Enter your scores above</div>
 
         <div id="gradeBreakdown" class="grade-breakdown" style="display: none;">
             <strong>Grade Calculation</strong>
