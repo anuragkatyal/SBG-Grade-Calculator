@@ -239,11 +239,13 @@
         <div class="final-exam-rules">
             <h4>Final Exam Impact Rules:</h4>
             <ul>
-                <li><strong>85% or higher:</strong> Grade improves by up to 2 letter grades</li>
-                <li><strong>70-84.99%:</strong> Grade improves by up to 1 letter grade</li>
-                <li><strong>60-69.99%:</strong> No change to grade</li>
-                <li><strong>50-59.99%:</strong> Grade drops by up to 1 letter grade</li>
-                <li><strong>Below 50%:</strong> Grade drops by up to 2 letter grades</li>
+                <li><strong>90% or higher:</strong> Grade improves by up to 3 letter grades</li>
+                <li><strong>80–89.99%:</strong> Grade improves by up to 2 letter grades</li>
+                <li><strong>70–79.99%:</strong> Grade improves by up to 1 letter grade</li>
+                <li><strong>60–69.99%:</strong> No change to grade</li>
+                <li><strong>50–59.99%:</strong> Grade drops by up to 1 letter grade</li>
+                <li><strong>40–49.99%:</strong> Grade drops by up to 2 letter grades</li>
+                <li><strong>Below 40%:</strong> Grade drops by up to 3 letter grades</li>
             </ul>
         </div>
     </div>
@@ -340,7 +342,10 @@
             let finalGrade;
             let adjustment = 0;
             
-            if (finalExam >= 85) {
+            if (finalExam >= 90) {
+                // Grade goes up by a maximum of 3 letter grades
+                adjustment = 3;
+            } else if (finalExam >= 80) {
                 // Grade goes up by a maximum of 2 letter grades
                 adjustment = 2;
             } else if (finalExam >= 70) {
@@ -352,9 +357,12 @@
             } else if (finalExam >= 50) {
                 // Grade goes down by a maximum of 1 letter grade
                 adjustment = -1;
-            } else {
+            } else if (finalExam >= 40) {
                 // Grade goes down by a maximum of 2 letter grades
                 adjustment = -2;
+            } else {
+                // Grade goes down by a maximum of 3 letter grades
+                adjustment = -3;
             }
             
             finalGrade = adjustGrade(initialGrade, adjustment);
