@@ -108,18 +108,18 @@
         }
 
         .hashmarks {
-            display: flex;
-            justify-content: space-between;
+            position: relative;
+            height: 28px;
             margin-top: 2px;
         }
 
         .hashmark {
-            position: relative;
+            position: absolute;
+            transform: translateX(-50%);
             text-align: center;
             font-size: 11px;
             color: #6b6b6b;
             font-weight: 500;
-            flex: none;
         }
 
         .hashmark::before {
@@ -194,6 +194,29 @@
             margin: 32px 0;
         }
 
+        .rules-columns {
+            display: flex;
+            gap: 40px;
+        }
+
+        .rules-columns > div {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* In the two-column layout the rules sit side by side, so drop the
+           top margin the exam rules used when stacked below the scale. */
+        .rules-columns .final-exam-rules {
+            margin-top: 0;
+        }
+
+        @media (max-width: 620px) {
+            .rules-columns {
+                flex-direction: column;
+                gap: 28px;
+            }
+        }
+
         .grading-scale {
             padding: 0;
         }
@@ -222,6 +245,20 @@
 
         .grading-scale li:last-child {
             border-bottom: none;
+        }
+
+        .grading-scale .grade-subrules {
+            margin: 6px 0 2px 16px;
+            list-style: disc;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .grading-scale .grade-subrules li {
+            padding: 2px 0;
+            border-bottom: none;
+            font-size: 13px;
+            color: #6b7280;
         }
 
         .final-exam-rules {
@@ -296,7 +333,10 @@
 
         <div class="input-group">
             <label for="finalExam">Final Exam Score</label>
-            <input type="range" id="finalExam" min="0" max="100" value="0" oninput="calculateGrade()">
+            <div class="slider-container">
+                <input type="range" id="finalExam" min="0" max="100" value="0" oninput="calculateGrade()">
+                <div class="hashmarks" id="finalHashmarks"></div>
+            </div>
             <div class="slider-readout">
                 <span class="slider-readout-label">Score =&nbsp;</span>
                 <span class="slider-value" id="finalValue">0%</span>
@@ -313,195 +353,208 @@
 
         <div class="section-divider"></div>
 
-        <div class="grading-scale">
-            <h3>Standards-Based Grading Scale</h3>
-            <ul>
-                <li><strong>A:</strong> 10 CORE + 4, 5, or 6 OTHER</li>
-                <li><strong>B:</strong> 10 CORE + 2 or 3 OTHER</li>
-                <li><strong>C:</strong>
-                    <ul style="margin: 6px 0 2px 16px; list-style: disc; font-size: 13px; color: #6b7280;">
-                        <li>10 CORE + 1 OTHER, OR</li>
-                        <li>10 CORE (no others needed), OR</li>
-                        <li>9 CORE + 4, 5, or 6 OTHER, OR</li>
-                        <li>8 CORE + 5 or 6 OTHER</li>
-                    </ul>
-                </li>
-                <li><strong>D:</strong>
-                    <ul style="margin: 6px 0 2px 16px; list-style: disc; font-size: 13px; color: #6b7280;">
-                        <li>9 CORE + 1, 2, or 3 OTHER, OR</li>
-                        <li>9 CORE (no others needed), OR</li>
-                        <li>8 CORE + 1, 2, 3, or 4 OTHER, OR</li>
-                        <li>8 CORE (no others needed)</li>
-                    </ul>
-                </li>
-                <li><strong>F:</strong> 7 or fewer CORE</li>
-            </ul>
-        </div>
+        <div class="rules-columns">
+            <div class="grading-scale">
+                <h3>Standards-Based Grading Scale</h3>
+                <ul id="gradingScaleList"></ul>
+            </div>
 
-        <div class="final-exam-rules">
-            <h4>Final Exam Impact Rules</h4>
-            <ul>
-                <li><strong>90% or higher:</strong> Grade improves by up to 3 letter grades</li>
-                <li><strong>80–89.99%:</strong> Grade improves by up to 2 letter grades</li>
-                <li><strong>70–79.99%:</strong> Grade improves by up to 1 letter grade</li>
-                <li><strong>60–69.99%:</strong> No change to grade</li>
-                <li><strong>50–59.99%:</strong> Grade drops by up to 1 letter grade</li>
-                <li><strong>40–49.99%:</strong> Grade drops by up to 2 letter grades</li>
-                <li><strong>Below 40%:</strong> Grade drops by up to 3 letter grades</li>
-            </ul>
+            <div class="final-exam-rules">
+                <h4>Final Exam Impact Rules</h4>
+                <ul id="finalExamRulesList"></ul>
+            </div>
         </div>
     </div>
 
     <script>
-        function createHashmarks() {
-            // Create hashmarks for CORE targets (0-10)
-            const coreHashmarks = document.getElementById('coreHashmarks');
-            for (let i = 0; i <= 10; i++) {
-                const hashmark = document.createElement('div');
-                hashmark.className = 'hashmark';
-                hashmark.textContent = i;
-                coreHashmarks.appendChild(hashmark);
-            }
+        // ===================================================================
+        //  Grading rules — the single source of truth.
+        //  Both the calculation AND the rule lists shown on the page are
+        //  generated from the two tables below, so they can never drift apart.
+        // ===================================================================
 
-            // Create hashmarks for OTHER targets (0-6)
-            const otherHashmarks = document.getElementById('otherHashmarks');
-            for (let i = 0; i <= 6; i++) {
-                const hashmark = document.createElement('div');
-                hashmark.className = 'hashmark';
-                hashmark.textContent = i;
-                otherHashmarks.appendChild(hashmark);
-            }
-        }
+        // Letter-grade ladder, lowest to highest. Used to nudge a grade up or
+        // down for the final-exam adjustment. The display order (A→F) and the
+        // CSS class names (grade-A … grade-F) both derive from this.
+        const GRADE_LADDER = ['F', 'D', 'C', 'B', 'A'];
+        const GRADE_DISPLAY_ORDER = [...GRADE_LADDER].reverse();
 
-        function adjustGrade(originalGrade, adjustment) {
-            const gradeOrder = ['F', 'D', 'C', 'B', 'A'];
-            const currentIndex = gradeOrder.indexOf(originalGrade);
-            const newIndex = Math.max(0, Math.min(4, currentIndex + adjustment));
-            return gradeOrder[newIndex];
-        }
+        // Base grade from mastered Learning Targets. Rules are checked top to
+        // bottom; the first match wins. `core`/`other` are the values that
+        // qualify; 'any' matches anything (used for the F fallback row).
+        const BASE_GRADE_RULES = [
+            { grade: 'A', core: 10,    other: [4, 5, 6] },
+            { grade: 'B', core: 10,    other: [2, 3] },
+            { grade: 'C', core: 10,    other: [0, 1] },
+            { grade: 'C', core: 9,     other: [4, 5, 6] },
+            { grade: 'D', core: 9,     other: [0, 1, 2, 3] },
+            { grade: 'C', core: 8,     other: [5, 6] },
+            { grade: 'D', core: 8,     other: [0, 1, 2, 3, 4] },
+            { grade: 'F', core: 'any', other: 'any' },
+        ];
+
+        // Final-exam impact. Checked high to low; first row whose `min` the
+        // score meets supplies the adjustment (in letter grades).
+        const EXAM_RULES = [
+            { min: 90, delta:  3 },
+            { min: 80, delta:  2 },
+            { min: 70, delta:  1 },
+            { min: 60, delta:  0 },
+            { min: 50, delta: -1 },
+            { min: 40, delta: -2 },
+            { min:  0, delta: -3 },
+        ];
+
+        // CORE count below which the grade is F (derived from the rules above,
+        // so it stays correct if the thresholds change).
+        const F_THRESHOLD = Math.min(
+            ...BASE_GRADE_RULES.filter(r => typeof r.core === 'number').map(r => r.core)
+        ) - 1;
+
+        // ---- Calculation -------------------------------------------------
 
         function calculateStandardsGrade(core, other) {
-            // F grade: 7 or fewer CORE LTs
-            if (core <= 7) {
-                return 'F';
-            }
-            
-            // 8 CORE LTs
-            if (core === 8) {
-                if (other >= 5) {
-                    return 'C'; // 8 CORE + 5 or 6 OTHER = C
-                } else if (other >= 1) {
-                    return 'D'; // 8 CORE + 1, 2, 3, or 4 OTHER = D
-                } else {
-                    return 'D'; // 8 CORE (no others) = D
-                }
-            }
-            
-            // 9 CORE LTs
-            if (core === 9) {
-                if (other >= 4) {
-                    return 'C'; // 9 CORE + 4, 5, or 6 OTHER = C
-                } else if (other >= 1) {
-                    return 'D'; // 9 CORE + 1, 2, or 3 OTHER = D
-                } else {
-                    return 'D'; // 9 CORE (no others) = D
-                }
-            }
-            
-            // 10 CORE LTs
-            if (core === 10) {
-                if (other >= 4) {
-                    return 'A'; // 10 CORE + 4, 5, or 6 OTHER = A
-                } else if (other >= 2) {
-                    return 'B'; // 10 CORE + 2 or 3 OTHER = B
-                } else if (other >= 1) {
-                    return 'C'; // 10 CORE + 1 OTHER = C
-                } else {
-                    return 'C'; // 10 CORE (no others) = C
-                }
-            }
-            
-            // This shouldn't happen given our constraints, but fallback
-            return 'F';
+            const rule = BASE_GRADE_RULES.find(r =>
+                (r.core === 'any' || r.core === core) &&
+                (r.other === 'any' || r.other.includes(other))
+            );
+            return rule ? rule.grade : 'F';
         }
 
+        function examAdjustment(score) {
+            const rule = EXAM_RULES.find(r => score >= r.min);
+            return rule ? rule.delta : 0;
+        }
+
+        function adjustGrade(grade, delta) {
+            const i = GRADE_LADDER.indexOf(grade) + delta;
+            const clamped = Math.max(0, Math.min(GRADE_LADDER.length - 1, i));
+            return GRADE_LADDER[clamped];
+        }
+
+        // ---- Phrasing helpers (shared by the generated rule lists) -------
+
+        // [4, 5, 6] -> "4, 5, or 6";  [2, 3] -> "2 or 3";  [1] -> "1"
+        function listPhrase(nums) {
+            if (nums.length === 1) return `${nums[0]}`;
+            if (nums.length === 2) return `${nums[0]} or ${nums[1]}`;
+            return `${nums.slice(0, -1).join(', ')}, or ${nums[nums.length - 1]}`;
+        }
+
+        function baseRulePhrase(rule) {
+            if (rule.core === 'any') return `${F_THRESHOLD} or fewer CORE`;
+            return `${rule.core} CORE + ${listPhrase(rule.other)} OTHER`;
+        }
+
+        function examRangePhrase(rule, index) {
+            if (index === 0) return `${rule.min}% or higher`;
+            const upper = EXAM_RULES[index - 1].min;
+            if (rule.min === 0) return `Below ${upper}%`;
+            return `${rule.min}–${upper - 0.01}%`;
+        }
+
+        function examDeltaPhrase(delta) {
+            const n = Math.abs(delta);
+            const grades = `${n} letter grade${n > 1 ? 's' : ''}`;
+            if (delta > 0) return `Grade improves by up to ${grades}`;
+            if (delta < 0) return `Grade drops by up to ${grades}`;
+            return 'No change to grade';
+        }
+
+        // ---- Rendering ---------------------------------------------------
+
+        // Place tick marks under a slider. Pass `marks` as a list of
+        // { value, label } to mark specific values; omit it to mark every
+        // integer from the slider's min to its max.
+        function createHashmarks(sliderId, containerId, marks) {
+            const slider = document.getElementById(sliderId);
+            const min = parseInt(slider.min, 10);
+            const max = parseInt(slider.max, 10);
+            const container = document.getElementById(containerId);
+            if (!marks) {
+                marks = [];
+                for (let v = min; v <= max; v++) marks.push({ value: v, label: v });
+            }
+            for (const { value, label } of marks) {
+                const hashmark = document.createElement('div');
+                hashmark.className = 'hashmark';
+                hashmark.textContent = label;
+                // Center each mark on the slider thumb's center, which travels
+                // from 11px (half the 22px thumb) to (width - 11px).
+                const fraction = (value - min) / (max - min);
+                hashmark.style.left = `calc(11px + (100% - 22px) * ${fraction})`;
+                container.appendChild(hashmark);
+            }
+        }
+
+        function renderGradingScale() {
+            const ul = document.getElementById('gradingScaleList');
+            for (const grade of GRADE_DISPLAY_ORDER) {
+                const rules = BASE_GRADE_RULES.filter(r => r.grade === grade);
+                const li = document.createElement('li');
+                if (rules.length === 1) {
+                    li.innerHTML = `<strong>${grade}:</strong> ${baseRulePhrase(rules[0])}`;
+                } else {
+                    const items = rules.map(r => `<li>${baseRulePhrase(r)}</li>`).join('');
+                    li.innerHTML = `<strong>${grade}:</strong><ul class="grade-subrules">${items}</ul>`;
+                }
+                ul.appendChild(li);
+            }
+        }
+
+        function renderExamRules() {
+            const ul = document.getElementById('finalExamRulesList');
+            EXAM_RULES.forEach((rule, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${examRangePhrase(rule, i)}:</strong> ${examDeltaPhrase(rule.delta)}`;
+                ul.appendChild(li);
+            });
+        }
+
+        // ---- Main update loop --------------------------------------------
+
         function calculateGrade() {
-            const core = parseInt(document.getElementById('coreTargets').value) || 0;
-            const other = parseInt(document.getElementById('otherTargets').value) || 0;
-            const finalExam = parseInt(document.getElementById('finalExam').value) || 0;
-            const resultDiv = document.getElementById('result');
-            const breakdownDiv = document.getElementById('gradeBreakdown');
-            
-            // Update slider value displays
-            document.getElementById('coreValue').textContent = core;
+            const core      = parseInt(document.getElementById('coreTargets').value, 10) || 0;
+            const other     = parseInt(document.getElementById('otherTargets').value, 10) || 0;
+            const finalExam = parseInt(document.getElementById('finalExam').value, 10) || 0;
+
+            document.getElementById('coreValue').textContent  = core;
             document.getElementById('otherValue').textContent = other;
             document.getElementById('finalValue').textContent = finalExam + '%';
-            
-            // Calculate initial grade based on standards
-            const initialGrade = calculateStandardsGrade(core, other);
-            
-            // Apply final exam impact rules
-            let finalGrade;
-            let adjustment = 0;
-            
-            if (finalExam >= 90) {
-                // Grade goes up by a maximum of 3 letter grades
-                adjustment = 3;
-            } else if (finalExam >= 80) {
-                // Grade goes up by a maximum of 2 letter grades
-                adjustment = 2;
-            } else if (finalExam >= 70) {
-                // Grade goes up by a maximum of 1 letter grade
-                adjustment = 1;
-            } else if (finalExam >= 60) {
-                // No change
-                adjustment = 0;
-            } else if (finalExam >= 50) {
-                // Grade goes down by a maximum of 1 letter grade
-                adjustment = -1;
-            } else if (finalExam >= 40) {
-                // Grade goes down by a maximum of 2 letter grades
-                adjustment = -2;
-            } else {
-                // Grade goes down by a maximum of 3 letter grades
-                adjustment = -3;
-            }
-            
-            finalGrade = adjustGrade(initialGrade, adjustment);
-            
-            let gradeClass = '';
-            switch(finalGrade) {
-                case 'A': gradeClass = 'grade-A'; break;
-                case 'B': gradeClass = 'grade-B'; break;
-                case 'C': gradeClass = 'grade-C'; break;
-                case 'D': gradeClass = 'grade-D'; break;
-                case 'F': gradeClass = 'grade-F'; break;
-            }
-            
-            resultDiv.className = `result ${gradeClass}`;
+
+            const baseGrade  = calculateStandardsGrade(core, other);
+            const adjustment = examAdjustment(finalExam);
+            const finalGrade = adjustGrade(baseGrade, adjustment);
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result grade-${finalGrade}`;
             resultDiv.textContent = `Your Final Grade: ${finalGrade}`;
-            
-            // Show breakdown
-            breakdownDiv.style.display = 'block';
-            document.getElementById('initialGradeText').textContent = 
-                `Standards-based grade: ${initialGrade} (${core} CORE + ${other} OTHER)`;
-            
-            // Determine impact text
+
+            document.getElementById('gradeBreakdown').style.display = 'block';
+            document.getElementById('initialGradeText').textContent =
+                `Standards-based grade: ${baseGrade} (${core} CORE + ${other} OTHER)`;
+
+            const n = Math.abs(adjustment);
+            const grades = `${n} letter grade${n > 1 ? 's' : ''}`;
             let impactText = `Final exam: ${finalExam}% - `;
-            
             if (adjustment > 0) {
-                impactText += `Grade improved from ${initialGrade} to ${finalGrade}! (+${adjustment} letter grade${adjustment > 1 ? 's' : ''})`;
+                impactText += `Grade improved from ${baseGrade} to ${finalGrade}! (+${grades})`;
             } else if (adjustment < 0) {
-                impactText += `Grade lowered from ${initialGrade} to ${finalGrade} (${adjustment} letter grade${Math.abs(adjustment) > 1 ? 's' : ''})`;
+                impactText += `Grade lowered from ${baseGrade} to ${finalGrade} (-${grades})`;
             } else {
                 impactText += `Grade remained ${finalGrade} (no change)`;
             }
-            
             document.getElementById('finalExamImpact').textContent = impactText;
         }
 
-        // Initialize hashmarks and calculate initial grade
-        createHashmarks();
+        // ---- Init --------------------------------------------------------
+
+        createHashmarks('coreTargets', 'coreHashmarks');
+        createHashmarks('otherTargets', 'otherHashmarks');
+        createHashmarks('finalExam', 'finalHashmarks',
+            [0, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v, label: `${v}%` })));
+        renderGradingScale();
+        renderExamRules();
         calculateGrade();
     </script>
 </body>
