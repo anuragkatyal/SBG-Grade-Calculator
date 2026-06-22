@@ -9,14 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         // Set the theme before the page paints to avoid a flash of the wrong
-        // colors. Uses the saved choice, falling back to the OS preference.
+        // colors. Uses the saved choice, defaulting to dark mode for new
+        // visitors who haven't toggled a preference yet.
         (function () {
+            var theme = 'dark';
             try {
-                var saved = localStorage.getItem('theme');
-                var theme = saved
-                    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
+                theme = localStorage.getItem('theme') || 'dark';
             } catch (e) {}
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
     <style>
