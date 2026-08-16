@@ -197,14 +197,21 @@
             font-size: 11px;
             color: var(--muted);
             font-weight: 500;
+            /* Room for the tick drawn by ::before. */
+            padding-top: 10px;
         }
 
+        /* A drawn tick rather than a '|' glyph: the glyph carries uneven side
+           bearings, so it reads as off-centre from the slider thumb. */
         .hashmark::before {
-            content: '|';
-            display: block;
-            color: var(--muted);
-            font-size: 10px;
-            margin-bottom: 2px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 6px;
+            margin-left: -0.5px;
+            background: var(--muted);
         }
 
         .slider-readout {
@@ -474,13 +481,11 @@
         // Final-exam impact. Checked high to low; first row whose `min` the
         // score meets supplies the adjustment (in letter grades).
         const EXAM_RULES = [
-            { min: 90, delta:  3 },
-            { min: 80, delta:  2 },
+            { min: 85, delta:  2 },
             { min: 70, delta:  1 },
             { min: 60, delta:  0 },
             { min: 50, delta: -1 },
-            { min: 40, delta: -2 },
-            { min:  0, delta: -3 },
+            { min:  0, delta: -2 },
         ];
 
         // CORE count below which the grade is F (derived from the rules above,
@@ -629,8 +634,10 @@
 
         createHashmarks('coreTargets', 'coreHashmarks');
         createHashmarks('otherTargets', 'otherHashmarks');
+        // Mark each exam threshold (plus 100) so the ticks follow EXAM_RULES.
         createHashmarks('finalExam', 'finalHashmarks',
-            [0, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v, label: `${v}%` })));
+            [...EXAM_RULES.map(r => r.min).reverse(), 100]
+                .map(v => ({ value: v, label: `${v}%` })));
         renderGradingScale();
         renderExamRules();
         calculateGrade();
