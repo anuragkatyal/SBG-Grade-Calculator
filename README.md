@@ -43,21 +43,29 @@ CORE LTs (0–10) and OTHER LTs (0–6) to a letter:
 ### 2. Final exam adjustment
 
 The base grade is then nudged up or down by `adjustGrade()` using the delta from
-`EXAM_RULES` (looked up by `examAdjustment()`), based on the final exam score:
+`EXAM_RULES` (looked up by `examRuleFor()`), based on the final exam score:
 
 | Final exam | Letter-grade change |
 |------------|---------------------|
-| ≥ 90%      | up to **+3**        |
-| 80–89.99%  | up to **+2**        |
-| 70–79.99%  | up to **+1**        |
+| ≥ 85%      | up to **+2**        |
+| 70–84.99%  | up to **+1**        |
 | 60–69.99%  | no change           |
 | 50–59.99%  | up to **−1**        |
-| 40–49.99%  | up to **−2**        |
-| < 40%      | up to **−3**        |
+| 35–49.99%  | up to **−2**        |
+| Below 35%, or a missed part of the final exam | **Automatic F** |
 
 "Up to" is enforced by clamping: grades never go above A or below F. The grade
 order used for adjustment is `['F', 'D', 'C', 'B', 'A']` — note there is no
 distinction between, say, A and A+; this is a 5-level scale.
+
+The bottom row is not a delta — it's an override. In `EXAM_RULES`, that row's
+`delta` is the string `'F'` rather than a number; `calculateGrade()` checks for
+this sentinel (or the "I missed a part of the final exam" checkbox) and, if
+either is true, sets the final grade straight to F, skipping `adjustGrade()`
+entirely. This matters because a numeric delta is only ever a few steps on the
+five-level ladder — a student with a base grade of A can't be pushed down to F
+by a large negative delta, so the override exists specifically to guarantee F
+regardless of how strong the standards-based grade was.
 
 ---
 
@@ -115,7 +123,11 @@ table — no need to edit any HTML.
 
 ### Change the final-exam impact rules
 Edit the `EXAM_RULES` table — each row is `{ min, delta }`, evaluated high to low.
-The **Final Exam Impact Rules** list on the page is generated from it.
+The **Final Exam Impact Rules** list on the page is generated from it. `delta` is
+normally a number of letter grades, but the string `'F'` marks an override row
+(automatic F, bypassing the standards-based grade) instead of a numeric nudge.
+An optional `note` field appends parenthetical text to that row's display
+phrase — used for "or missed a part of the final exam" on the override row.
 
 ### Change the number of CORE / OTHER targets
 Set `max` on the `<input type="range">` elements (`id="coreTargets"`,

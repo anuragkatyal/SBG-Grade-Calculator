@@ -184,6 +184,34 @@
             border-radius: 3px;
         }
 
+        input[type="range"]:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .missed-part-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .missed-part-check input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .missed-part-check input[type="checkbox"]:focus-visible {
+            outline: 3px solid var(--accent);
+            outline-offset: 3px;
+        }
+
         .hashmarks {
             position: relative;
             height: 28px;
@@ -426,6 +454,10 @@
                 <span class="slider-readout-label">Score =&nbsp;</span>
                 <span class="slider-value" id="finalValue">0%</span>
             </div>
+            <label class="missed-part-check" for="missedFinal">
+                <input type="checkbox" id="missedFinal" onchange="calculateGrade()">
+                I missed a part of the final exam
+            </label>
         </div>
 
         <div id="result" class="result" aria-live="polite" aria-atomic="true">Enter your scores above</div>
@@ -479,13 +511,16 @@
         ];
 
         // Final-exam impact. Checked high to low; first row whose `min` the
-        // score meets supplies the adjustment (in letter grades).
+        // score meets supplies the adjustment (in letter grades). A delta of
+        // 'F' means the rule overrides the standards-based grade entirely
+        // rather than nudging it, per the syllabus's "automatic F" clause.
         const EXAM_RULES = [
             { min: 85, delta:  2 },
             { min: 70, delta:  1 },
             { min: 60, delta:  0 },
             { min: 50, delta: -1 },
-            { min:  0, delta: -2 },
+            { min: 35, delta: -2 },
+            { min:  0, delta: 'F', note: 'or missed a part of the final exam' },
         ];
 
         // CORE count below which the grade is F (derived from the rules above,
@@ -504,9 +539,8 @@
             return rule ? rule.grade : 'F';
         }
 
-        function examAdjustment(score) {
-            const rule = EXAM_RULES.find(r => score >= r.min);
-            return rule ? rule.delta : 0;
+        function examRuleFor(score) {
+            return EXAM_RULES.find(r => score >= r.min) || EXAM_RULES[EXAM_RULES.length - 1];
         }
 
         function adjustGrade(grade, delta) {
@@ -530,13 +564,18 @@
         }
 
         function examRangePhrase(rule, index) {
-            if (index === 0) return `${rule.min}% or higher`;
-            const upper = EXAM_RULES[index - 1].min;
-            if (rule.min === 0) return `Below ${upper}%`;
-            return `${rule.min}–${upper - 0.01}%`;
+            let phrase;
+            if (index === 0) {
+                phrase = `${rule.min}% or higher`;
+            } else {
+                const upper = EXAM_RULES[index - 1].min;
+                phrase = rule.min === 0 ? `Below ${upper}%` : `${rule.min}–${upper - 0.01}%`;
+            }
+            return rule.note ? `${phrase} (${rule.note})` : phrase;
         }
 
         function examDeltaPhrase(delta) {
+            if (delta === 'F') return 'Automatic F — overrides the standards-based grade entirely';
             const n = Math.abs(delta);
             const grades = `${n} letter grade${n > 1 ? 's' : ''}`;
             if (delta > 0) return `Grade improves by up to ${grades}`;
@@ -597,17 +636,20 @@
         // ---- Main update loop --------------------------------------------
 
         function calculateGrade() {
-            const core      = parseInt(document.getElementById('coreTargets').value, 10) || 0;
-            const other     = parseInt(document.getElementById('otherTargets').value, 10) || 0;
-            const finalExam = parseInt(document.getElementById('finalExam').value, 10) || 0;
+            const core       = parseInt(document.getElementById('coreTargets').value, 10) || 0;
+            const other      = parseInt(document.getElementById('otherTargets').value, 10) || 0;
+            const finalExam  = parseInt(document.getElementById('finalExam').value, 10) || 0;
+            const missedPart = document.getElementById('missedFinal').checked;
 
             document.getElementById('coreValue').textContent  = core;
             document.getElementById('otherValue').textContent = other;
             document.getElementById('finalValue').textContent = finalExam + '%';
+            document.getElementById('finalExam').disabled = missedPart;
 
-            const baseGrade  = calculateStandardsGrade(core, other);
-            const adjustment = examAdjustment(finalExam);
-            const finalGrade = adjustGrade(baseGrade, adjustment);
+            const baseGrade = calculateStandardsGrade(core, other);
+            const rule      = examRuleFor(finalExam);
+            const forcedF   = missedPart || rule.delta === 'F';
+            const finalGrade = forcedF ? 'F' : adjustGrade(baseGrade, rule.delta);
 
             const resultDiv = document.getElementById('result');
             resultDiv.className = `result grade-${finalGrade}`;
@@ -617,17 +659,26 @@
             document.getElementById('initialGradeText').textContent =
                 `Standards-based grade: ${baseGrade} (${core} CORE + ${other} OTHER)`;
 
-            const n = Math.abs(adjustment);
-            const grades = `${n} letter grade${n > 1 ? 's' : ''}`;
-            let impactText = `Final exam: ${finalExam}% - `;
-            if (adjustment > 0) {
-                impactText += `Grade improved from ${baseGrade} to ${finalGrade}! (+${grades})`;
-            } else if (adjustment < 0) {
-                impactText += `Grade lowered from ${baseGrade} to ${finalGrade} (-${grades})`;
+            const impactEl = document.getElementById('finalExamImpact');
+            if (missedPart) {
+                impactEl.textContent =
+                    `Missed part of the final exam - automatic F (overrides the ${baseGrade} standards-based grade)`;
+            } else if (forcedF) {
+                impactEl.textContent =
+                    `Final exam: ${finalExam}% - automatic F (overrides the ${baseGrade} standards-based grade)`;
             } else {
-                impactText += `Grade remained ${finalGrade} (no change)`;
+                const n = Math.abs(rule.delta);
+                const grades = `${n} letter grade${n > 1 ? 's' : ''}`;
+                let impactText = `Final exam: ${finalExam}% - `;
+                if (rule.delta > 0) {
+                    impactText += `Grade improved from ${baseGrade} to ${finalGrade}! (+${grades})`;
+                } else if (rule.delta < 0) {
+                    impactText += `Grade lowered from ${baseGrade} to ${finalGrade} (-${grades})`;
+                } else {
+                    impactText += `Grade remained ${finalGrade} (no change)`;
+                }
+                impactEl.textContent = impactText;
             }
-            document.getElementById('finalExamImpact').textContent = impactText;
         }
 
         // ---- Init --------------------------------------------------------
